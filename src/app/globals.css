@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f1f3f5;
+  --ink: #1a222c;
+  --mute: #5a6674;
+  --rule: #c5ccd4;
+  --proof: #c23a2b;
+  --proof-ink: #f7f4f2;
+  --raised: #f7f8fa;
+  --shadow: 0 18px 40px rgb(26 34 44 / 0.08);
+  --radius: 8px;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-mute: var(--mute);
+  --color-rule: var(--rule);
+  --color-proof: var(--proof);
+  --color-proof-ink: var(--proof-ink);
+  --color-raised: var(--raised);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #14181e;
+    --ink: #eef1f4;
+    --mute: #9aa4b0;
+    --rule: #2c343e;
+    --proof: #d45a4c;
+    --proof-ink: #1a1413;
+    --raised: #1c222a;
+    --shadow: 0 18px 40px rgb(0 0 0 / 0.35);
+  }
+}
+
+* {
+  border-color: var(--rule);
+}
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body), "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), Syne, ui-sans-serif, sans-serif;
+}
+
+.font-mono {
+  font-family: var(--font-mono), "IBM Plex Mono", ui-monospace, monospace;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--proof) 28%, transparent);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--proof);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
