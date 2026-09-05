@@ -11,9 +11,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-[100dvh] bg-paper text-ink">
       <header className="border-b border-rule">
-        <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-4 md:px-8">
+        <div className="mx-auto flex min-h-16 max-w-[1400px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-8">
           <BrandMark href="/app" />
-          <nav className="flex items-center gap-5 text-sm">
+          <nav className="flex w-full items-center justify-between gap-4 text-sm sm:w-auto">
             <Link href="/app" className="text-mute hover:text-ink">
               Checker
             </Link>

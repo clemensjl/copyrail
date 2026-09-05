@@ -70,6 +70,7 @@ export default function CheckerPage() {
           <label className="block">
             <span className="mb-2 block text-sm font-medium">Copy</span>
             <textarea
+              aria-label="Copy"
               value={copy}
               onChange={(e) => { setCopy(e.target.value); setRecord(null); }}
               maxLength={30000}
