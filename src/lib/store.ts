@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { hashPassword } from "./auth";
-import { checkCopy, normalizeList, type BrandProfile } from "./brand-check";
+import { applyRails, checkCopy, normalizeList, type BrandProfile } from "./brand-check";
 import type { CheckRecord } from "./types";
 
 export const DEMO_EMAIL = "demo@copyrail.app";
@@ -162,6 +162,18 @@ export function getHistory(userId: string): CheckRecord[] {
   return memory().history[userId] ?? [];
 }
 
+export function setPlan(userId: string, plan: User["plan"]): User {
+  ensureSeeded();
+  const user = getUserById(userId);
+  if (!user) throw new Error("Unknown account.");
+  if (!["starter", "team", "desk", "demo"].includes(plan)) {
+    throw new Error("Unknown plan.");
+  }
+  user.plan = plan;
+  persist();
+  return user;
+}
+
 export function recordCheck(userId: string, copy: string): CheckRecord {
   ensureSeeded();
   const profile = getProfile(userId);
@@ -179,6 +191,15 @@ export function recordCheck(userId: string, copy: string): CheckRecord {
   store.history[userId] = list.slice(0, HISTORY_LIMIT);
   persist();
   return record;
+}
+
+export function applyAndRecord(
+  userId: string,
+  copy: string,
+): { copy: string; record: CheckRecord } {
+  const profile = getProfile(userId);
+  const applied = applyRails(copy, profile);
+  return { copy: applied.copy, record: recordCheck(userId, applied.copy) };
 }
 
 export type CookieReplica = {

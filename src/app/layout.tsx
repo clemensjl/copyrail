@@ -24,7 +24,15 @@ export const metadata: Metadata = {
   title: "Copyrail - brand voice guardrails for AI copy",
   description:
     "Score AI-written copy against must-use terms, banned claims, and voice rules before it ships.",
+  metadataBase: new URL("https://copyrail.vercel.app"),
   icons: { icon: "/logo.jpg" },
+  openGraph: {
+    title: "Copyrail",
+    description: "Keep AI copy on the brand rail.",
+    url: "https://copyrail.vercel.app",
+    siteName: "Copyrail",
+    images: [{ url: "/hero.jpg", width: 1600, height: 900, alt: "Copyrail desk" }],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

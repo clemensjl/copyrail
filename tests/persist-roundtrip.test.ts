@@ -1,11 +1,13 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import {
+  applyAndRecord,
   createUser,
   getHistory,
   getProfile,
   recordCheck,
   resetStore,
   saveProfile,
+  setPlan,
 } from "../src/lib/store";
 
 describe("account persistence round-trip", () => {
@@ -43,5 +45,10 @@ describe("account persistence round-trip", () => {
     expect(history[0]?.id).toBe(passing.id);
     expect(history.some((row) => row.id === failing.id)).toBe(true);
     expect(getProfile(user.id).mustAvoid).toContain("synergy");
+
+    const applied = applyAndRecord(user.id, "Northstar synergy will change your week.");
+    expect(applied.copy.toLowerCase()).not.toContain("synergy");
+    expect(applied.record.result.pass).toBe(true);
+    expect(setPlan(user.id, "team").plan).toBe("team");
   });
 });

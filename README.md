@@ -2,7 +2,7 @@
 
 Brand-voice guardrails for content teams shipping AI-written copy.
 
-Paste a draft. Copyrail scores it against the account's must-use terms, must-avoid words, and banned claims, then stores the result on that account.
+Paste a draft. Copyrail scores it against the account's must-use terms, must-avoid words, and banned claims, then stores the result on that account. Apply rails strips banned language and inserts missing required terms without an LLM.
 
 ## Stack
 

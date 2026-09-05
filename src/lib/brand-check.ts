@@ -129,3 +129,55 @@ export function checkCopy(copy: string, profile: BrandProfile): CheckResult {
     valid,
   };
 }
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function stripTerm(copy: string, term: string): string {
+  if (!term) return copy;
+  const re = new RegExp(escapeRegex(term), "gi");
+  return copy.replace(re, "");
+}
+
+function tidyCopy(copy: string): string {
+  return copy
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/ +([,.;:!?])/g, "$1")
+    .replace(/\(\s+/g, "(")
+    .replace(/\s+\)/g, ")")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .trim();
+}
+
+export function applyRails(
+  copy: string,
+  profile: BrandProfile,
+): { copy: string; result: CheckResult } {
+  if (typeof copy !== "string" || copy.trim() === "") {
+    return { copy: copy ?? "", result: checkCopy(copy ?? "", profile) };
+  }
+
+  let next = copy;
+  for (const term of [
+    ...normalizeList(profile.mustAvoid),
+    ...normalizeList(profile.bannedClaims),
+  ]) {
+    next = stripTerm(next, term);
+  }
+  next = tidyCopy(next);
+
+  const missing = normalizeList(profile.mustUse).filter(
+    (term) => findMatches(next, term).length === 0,
+  );
+  if (missing.length > 0) {
+    const addition = missing.join(". ");
+    next = next
+      ? `${next.replace(/[.!?]$/, "")}. ${addition}.`
+      : `${addition}.`;
+  }
+
+  next = tidyCopy(next);
+  return { copy: next, result: checkCopy(next, profile) };
+}

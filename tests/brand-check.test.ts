@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkCopy, PASS_THRESHOLD } from "../src/lib/brand-check";
+import { applyRails, checkCopy, PASS_THRESHOLD } from "../src/lib/brand-check";
 
 describe("checkCopy (shipped brand-check)", () => {
   it("fails copy that contains a must-avoid term and locates it", () => {
@@ -52,5 +52,33 @@ describe("checkCopy (shipped brand-check)", () => {
       expect(result.score).toBe(0);
       expect(result.violations.some((v) => v.type === "empty")).toBe(true);
     }
+  });
+
+  it("applyRails strips must-avoid terms and inserts missing must-use terms", () => {
+    const profile = {
+      mustUse: ["Acme"],
+      mustAvoid: ["synergy"],
+      bannedClaims: ["guaranteed results"],
+    };
+    const applied = applyRails(
+      "Welcome, where synergy and guaranteed results drive every launch.",
+      profile,
+    );
+    expect(applied.copy.toLowerCase()).not.toContain("synergy");
+    expect(applied.copy.toLowerCase()).not.toContain("guaranteed results");
+    expect(applied.copy.toLowerCase()).toContain("acme");
+    expect(applied.result.pass).toBe(true);
+    expect(applied.result.valid).toBe(true);
+    expect(applied.result.score).toBeGreaterThanOrEqual(PASS_THRESHOLD);
+  });
+
+  it("applyRails leaves empty copy invalid", () => {
+    const applied = applyRails("", {
+      mustUse: ["Acme"],
+      mustAvoid: ["synergy"],
+      bannedClaims: [],
+    });
+    expect(applied.result.valid).toBe(false);
+    expect(applied.result.pass).toBe(false);
   });
 });

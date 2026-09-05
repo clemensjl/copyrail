@@ -28,7 +28,7 @@ export async function currentUser(): Promise<User | null> {
 export async function setAuthCookies(user: User): Promise<void> {
   const jar = await cookies();
   jar.set(SESSION_COOKIE, createSession(user.id, user.email), cookieOptions);
-  jar.set(DATA_COOKIE, encodeReplica(user.id), cookieOptions);
+  jar.set(DATA_COOKIE, encodeToken(replicaFor(user.id)), cookieOptions);
 }
 
 export async function clearAuthCookies(): Promise<void> {
@@ -39,9 +39,5 @@ export async function clearAuthCookies(): Promise<void> {
 
 export async function refreshDataCookie(userId: string): Promise<void> {
   const jar = await cookies();
-  jar.set(DATA_COOKIE, encodeReplica(userId), cookieOptions);
-}
-
-function encodeReplica(userId: string): string {
-  return encodeToken(replicaFor(userId));
+  jar.set(DATA_COOKIE, encodeToken(replicaFor(userId)), cookieOptions);
 }
