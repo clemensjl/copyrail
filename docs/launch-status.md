@@ -23,12 +23,12 @@ Lint passes after converting standalone smoke scripts to ES modules. Latest app 
 
 ## Next work
 
-Build multi-brand review workspaces and subscription checkout/webhooks. Grok authentication is still unavailable. Do not mark the entire business objective complete.
+Continue subscription checkout/webhooks, reviewer collaboration, and account lifecycle features. Multi-brand workspaces and saved reports are now live. Grok authentication is still unavailable. Do not mark the entire business objective complete.
 
 ## Remaining requirements for the requested finished SaaS
 
 - Paid subscription checkout, webhook verification, entitlements, billing management, and live merchant setup.
-- Multi-brand/team collaboration and a differentiated review workflow appropriate to proposed pricing.
+- Reviewer/team collaboration on top of the shipped multi-brand review workflow.
 - Account recovery, email verification, account deletion/export, operational monitoring.
 - Privacy/terms with actual operator information, data retention, and support channel.
 - Grok logo, requiring working Grok authentication.
@@ -48,6 +48,10 @@ Implemented five private brand spaces, create/rename/switch, brand-specific guid
 
 All 13 tests passed, including real Postgres migration, account/brand isolation, capacity under concurrent creation, and immutable reports. A test caught concurrent schema initialization; it is now serialized with a transaction-scoped advisory lock and all migrations run in one transaction.
 
-Local production build and browser smoke passed: desktop/mobile, brand creation/switching, scoped histories, reports, JSON export, and unchanged historic snapshots after edits. The latest print-style adjustment still needs its production browser verification.
+Local production build and browser smoke passed: desktop/mobile, brand creation/switching, scoped histories, reports, JSON export, and unchanged historic snapshots after edits. The print layout has also passed production browser verification, including dark-mode print rendering.
 
-Next: publish this milestone and run the expanded API/browser smoke suite on the production alias. Then continue subscription integration, reviewer collaboration, account recovery and the launch prerequisites above.
+Production verified: runtime commit 41dd3a9; Vercel deployment dpl_r8bsyBnZGFybHCQesKgge2xyxqLm is READY at https://copyrail.vercel.app. The first deployment call returned Not authorized; whoami/project inspect verified access, and retrying with --scope clemens-jeles-projects succeeded.
+
+The expanded live HTTP smoke passed brand and account isolation, authenticated exports, and historic rule snapshots. The live browser smoke passed desktop/mobile signup, brand creation/switching, guidelines, reports, JSON download, history isolation, and no JavaScript errors. Print/PDF rendering was tested with dark color preference; a real PDF was generated and the print screenshot inspected. Temporary test accounts were removed.
+
+Next: subscription integration, reviewer collaboration, account recovery and the launch prerequisites above. No current deployment blocker remains.
