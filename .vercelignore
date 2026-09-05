@@ -1,0 +1,8 @@
+.git
+.agents
+artifacts
+data
+.env*
+tests
+scripts
+docs

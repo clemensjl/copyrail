@@ -1,6 +1,6 @@
-const assert = require('node:assert/strict');
-const { randomUUID } = require('node:crypto');
-const { neon } = require('@neondatabase/serverless');
+import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
+import { neon } from '@neondatabase/serverless';
 const base = process.env.SMOKE_BASE_URL || 'http://localhost:3000';
 const sql = neon(process.env.DATABASE_URL);
 const created = [];

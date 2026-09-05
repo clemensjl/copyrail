@@ -1,8 +1,10 @@
-const {chromium,expect}=require('@playwright/test');
-const {randomUUID}=require('node:crypto');
-const {neon}=require('@neondatabase/serverless');
-const fs=require('node:fs');
-const path=require('node:path');
+import {chromium,expect} from '@playwright/test';
+import {randomUUID} from 'node:crypto';
+import {neon} from '@neondatabase/serverless';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const base=process.env.SMOKE_BASE_URL||'https://copyrail.vercel.app';
 const email=`browser-${randomUUID()}@copyrail.test`;
 const password='browser-test-password-2026';
