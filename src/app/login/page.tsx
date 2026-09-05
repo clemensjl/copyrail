@@ -7,8 +7,8 @@ import { BrandMark } from "@/components/brand-mark";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("demo@copyrail.app");
-  const [password, setPassword] = useState("copyrail-demo");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
@@ -16,6 +16,7 @@ export default function LoginPage() {
     e.preventDefault();
     setPending(true);
     setError("");
+    try {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -29,6 +30,8 @@ export default function LoginPage() {
     }
     router.push("/app");
     router.refresh();
+    } catch { setError("Connection failed. Please try again."); }
+    finally { setPending(false); }
   }
 
   return (
@@ -37,7 +40,7 @@ export default function LoginPage() {
         <BrandMark />
         <h1 className="font-display mt-10 text-3xl font-semibold tracking-tight">Sign in</h1>
         <p className="mt-2 text-sm text-mute">
-          Seeded desk: demo@copyrail.app / copyrail-demo
+          Welcome back. Sign in to your private workspace.
         </p>
         <form onSubmit={onSubmit} className="mt-8 space-y-4">
           <label className="block">

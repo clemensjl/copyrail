@@ -17,6 +17,7 @@ export default function SignupPage() {
     e.preventDefault();
     setPending(true);
     setError("");
+    try {
     const res = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -30,6 +31,8 @@ export default function SignupPage() {
     }
     router.push("/app");
     router.refresh();
+    } catch { setError("Connection failed. Please try again."); }
+    finally { setPending(false); }
   }
 
   return (
@@ -38,7 +41,7 @@ export default function SignupPage() {
         <BrandMark />
         <h1 className="font-display mt-10 text-3xl font-semibold tracking-tight">Open the desk</h1>
         <p className="mt-2 text-sm text-mute">
-          Create an account, or sign in with the seeded demo.
+          Create your free workspace. Use a password with at least 12 characters.
         </p>
         <form onSubmit={onSubmit} className="mt-8 space-y-4">
           <label className="block">
@@ -66,7 +69,7 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={6}
+              minLength={12} maxLength={128}
               className="h-11 w-full rounded-[8px] border border-rule bg-raised px-3 text-ink"
             />
           </label>

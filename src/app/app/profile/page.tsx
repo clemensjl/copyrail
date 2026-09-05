@@ -6,20 +6,22 @@ export default function ProfilePage() {
   const [mustUse, setMustUse] = useState("");
   const [mustAvoid, setMustAvoid] = useState("");
   const [bannedClaims, setBannedClaims] = useState("");
-  const [plan, setPlan] = useState("starter");
+
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     Promise.all([fetch("/api/profile"), fetch("/api/auth/me")])
       .then(async ([profileRes, meRes]) => {
         const p = await profileRes.json();
-        const me = await meRes.json();
+        if (!profileRes.ok || !meRes.ok) throw new Error("Load failed");
         setMustUse((p.mustUse ?? []).join("\n"));
         setMustAvoid((p.mustAvoid ?? []).join("\n"));
         setBannedClaims((p.bannedClaims ?? []).join("\n"));
-        if (me.plan) setPlan(me.plan === "demo" ? "team" : me.plan);
+        setLoaded(true);
+
       })
       .catch(() => setError("Could not load rails."));
   }, []);
@@ -29,10 +31,11 @@ export default function ProfilePage() {
     setPending(true);
     setError("");
     setStatus("");
+    try {
     const res = await fetch("/api/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mustUse, mustAvoid, bannedClaims }),
+      body: JSON.stringify({ mustUse: mustUse.split("\n"), mustAvoid: mustAvoid.split("\n"), bannedClaims: bannedClaims.split("\n") }),
     });
     const data = await res.json().catch(() => ({}));
     setPending(false);
@@ -41,6 +44,8 @@ export default function ProfilePage() {
       return;
     }
     setStatus("Rails saved. Later requests will load this profile.");
+    } catch { setError("Connection failed. Your changes have not been saved."); }
+    finally { setPending(false); }
   }
 
   return (
@@ -53,40 +58,12 @@ export default function ProfilePage() {
         <Field label="Must-use terms" value={mustUse} onChange={setMustUse} />
         <Field label="Must-avoid terms" value={mustAvoid} onChange={setMustAvoid} />
         <Field label="Banned claims" value={bannedClaims} onChange={setBannedClaims} />
-        <fieldset>
-          <legend className="mb-2 text-sm font-medium">Plan</legend>
-          <div className="flex flex-wrap gap-2">
-            {(["starter", "team", "desk"] as const).map((id) => (
-              <button
-                key={id}
-                type="button"
-                onClick={async () => {
-                  const res = await fetch("/api/plan", {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ plan: id }),
-                  });
-                  if (!res.ok) {
-                    setError("Could not attach plan.");
-                    return;
-                  }
-                  setPlan(id);
-                  setStatus(`Attached the ${id} plan in demo mode.`);
-                }}
-                className={`h-10 rounded-[8px] px-4 text-sm ${
-                  plan === id ? "bg-ink text-paper" : "border border-rule bg-raised"
-                }`}
-              >
-                {id}
-              </button>
-            ))}
-          </div>
-        </fieldset>
+
         {error ? <p className="text-sm text-proof">{error}</p> : null}
         {status ? <p className="text-sm text-ink">{status}</p> : null}
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || !loaded}
           className="h-11 rounded-[8px] bg-proof px-5 text-sm font-medium text-proof-ink disabled:opacity-60"
         >
           {pending ? "Saving..." : "Save rails"}

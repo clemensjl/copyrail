@@ -12,6 +12,6 @@ export async function GET() {
     email: user.email,
     name: user.name,
     plan: user.plan,
-    profile: getProfile(user.id),
+    profile: await getProfile(user.id),
   });
 }

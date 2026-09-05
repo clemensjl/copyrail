@@ -1,23 +1,19 @@
-import { NextResponse } from "next/server";
-import { currentUser, refreshDataCookie } from "@/lib/request-auth";
+import { api, ApiError, readBody } from "@/lib/api";
+import { currentUser } from "@/lib/request-auth";
 import { getProfile, saveProfile } from "@/lib/store";
 import type { BrandProfile } from "@/lib/brand-check";
-
-export async function GET() {
+export async function GET() { return api(async () => {
   const user = await currentUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
-  return NextResponse.json(getProfile(user.id));
-}
-
-export async function PUT(request: Request) {
+  if (!user) throw new ApiError("Sign in to view guidelines.", 401);
+  return getProfile(user.id);
+}); }
+export async function PUT(request: Request) { return api(async () => {
   const user = await currentUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!user) throw new ApiError("Sign in to save guidelines.", 401);
+  const body = await readBody(request);
+  for (const key of ["mustUse", "mustAvoid", "bannedClaims"]) {
+    const value = body[key];
+    if (!Array.isArray(value) || value.length > 100 || value.some(v => typeof v !== "string" || v.length > 200)) throw new ApiError("Each list supports up to 100 phrases, each at most 200 characters.");
   }
-  const body = (await request.json().catch(() => null)) as Partial<BrandProfile> | null;
-  const profile = saveProfile(user.id, body ?? {});
-  await refreshDataCookie(user.id);
-  return NextResponse.json(profile);
-}
+  return saveProfile(user.id, body as BrandProfile);
+}); }

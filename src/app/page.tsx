@@ -3,15 +3,6 @@ import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
 import { LiveRail } from "@/components/live-rail";
 
-const brands = [
-  { name: "Halden", glyph: "H" },
-  { name: "Plover Health", glyph: "P" },
-  { name: "Oriole Bank", glyph: "O" },
-  { name: "Feldman", glyph: "F" },
-  { name: "Vesper Labs", glyph: "V" },
-  { name: "Kite & Co", glyph: "K" },
-];
-
 export default function MarketingPage() {
   return (
     <div className="min-h-[100dvh] bg-paper text-ink">
@@ -71,29 +62,6 @@ export default function MarketingPage() {
               sizes="(min-width: 768px) 50vw, 100vw"
               priority
             />
-          </div>
-        </section>
-
-        <section className="border-y border-rule bg-raised">
-          <div className="mx-auto grid max-w-[1400px] grid-cols-2 gap-6 px-4 py-8 sm:grid-cols-3 md:grid-cols-6 md:px-8">
-            {brands.map((b) => (
-              <div key={b.name} className="flex items-center gap-2 text-mute">
-                <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden>
-                  <rect width="28" height="28" rx="6" fill="currentColor" opacity="0.12" />
-                  <text
-                    x="14"
-                    y="19"
-                    textAnchor="middle"
-                    fontSize="13"
-                    fontFamily="Syne, sans-serif"
-                    fill="currentColor"
-                  >
-                    {b.glyph}
-                  </text>
-                </svg>
-                <span className="text-sm">{b.name}</span>
-              </div>
-            ))}
           </div>
         </section>
 
@@ -164,41 +132,30 @@ export default function MarketingPage() {
         <section id="pricing" className="border-t border-rule bg-raised">
           <div className="mx-auto max-w-[1400px] px-4 py-20 md:px-8">
             <h2 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">
-              Priced for a desk, sized for a million.
+              Start with a clearer review process.
             </h2>
             <p className="mt-3 max-w-[54ch] text-mute">
-              420 Team plans at $199/mo is $1,000,920 ARR. That is the path on this page, not a metric we pretend to have hit.
+              The preview is free. These are planned subscription prices; paid plans and team features are not available yet.
             </p>
             <div className="mt-10 grid gap-4 lg:grid-cols-[0.8fr_1.2fr_0.8fr]">
               <PriceCol
                 name="Starter"
                 price="$49"
-                note="Solo brand, 5,000 checks a month."
+                note="Planned: one brand workspace and saved checks."
               />
               <PriceCol
                 name="Team"
                 price="$199"
-                note="Five brands, shared rails, the plan that funds the $1M path."
+                note="Planned: five brands, shared guidelines, and team review."
                 featured
               />
               <PriceCol
                 name="Desk"
                 price="$499"
-                note="Org-wide rails and history for a full content desk."
+                note="Planned: organization-wide guidelines and review history."
               />
             </div>
           </div>
-        </section>
-
-        <section className="mx-auto max-w-[1400px] px-4 py-20 md:px-8">
-          <blockquote className="max-w-[28ch] font-display text-3xl font-semibold tracking-tight md:text-4xl">
-            We stopped arguing about tone in Slack. The rail already said no.
-          </blockquote>
-          <p className="mt-4 text-sm text-mute">Mira Ellison, content lead at Plover Health</p>
-          <blockquote className="mt-12 max-w-[32ch] text-xl leading-8 text-ink">
-            Legal used to review every AI paragraph. Now they review the rails, and the desk runs itself.
-          </blockquote>
-          <p className="mt-3 text-sm text-mute">Jonah Reeve, brand counsel at Oriole Bank</p>
         </section>
 
         <section className="border-t border-rule">
@@ -207,7 +164,7 @@ export default function MarketingPage() {
               Put the next draft on the rail.
             </h2>
             <p className="mt-4 max-w-[46ch] text-sm text-mute">
-              Seeded desk: demo@copyrail.app / copyrail-demo
+              Create your own free workspace. No payment details required.
             </p>
             <Link
               href="/signup"

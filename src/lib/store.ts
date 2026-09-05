@@ -1,226 +1,66 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { hashPassword } from "./auth";
 import { applyRails, checkCopy, normalizeList, type BrandProfile } from "./brand-check";
+import { database, ensureDatabase } from "./db";
 import type { CheckRecord } from "./types";
-
-export const DEMO_EMAIL = "demo@copyrail.app";
-export const DEMO_PASSWORD = "copyrail-demo";
-
-export type User = {
-  id: string;
-  email: string;
-  passwordHash: string;
-  name: string;
-  plan: "starter" | "team" | "desk" | "demo";
-  createdAt: string;
-};
-
+export type User = { id: string; email: string; passwordHash: string; name: string; plan: "starter" | "team" | "desk" | "demo"; createdAt: string };
 export type { CheckRecord };
-
-type StoreShape = {
-  users: User[];
-  profiles: Record<string, BrandProfile>;
-  history: Record<string, CheckRecord[]>;
-};
-
-const STORE_PATH = join(process.cwd(), "data", "store.json");
-const HISTORY_LIMIT = 20;
-
-const g = globalThis as typeof globalThis & { __copyrailStore?: StoreShape };
-
-function emptyStore(): StoreShape {
-  return { users: [], profiles: {}, history: {} };
-}
-
-function loadFromDisk(): StoreShape | null {
-  try {
-    const raw = readFileSync(STORE_PATH, "utf8");
-    const parsed = JSON.parse(raw) as StoreShape;
-    if (!parsed || !Array.isArray(parsed.users)) return null;
-    parsed.profiles ??= {};
-    parsed.history ??= {};
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function saveToDisk(store: StoreShape): void {
-  try {
-    mkdirSync(dirname(STORE_PATH), { recursive: true });
-    writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), "utf8");
-  } catch {
-    // Vercel serverless filesystem is read-only; memory + cookies still hold the session.
-  }
-}
-
-function memory(): StoreShape {
-  if (!g.__copyrailStore) {
-    g.__copyrailStore = loadFromDisk() ?? emptyStore();
-  }
-  return g.__copyrailStore;
-}
-
-function persist(): void {
-  saveToDisk(memory());
-}
-
 export function defaultProfile(): BrandProfile {
-  return {
-    mustUse: ["Copyrail", "brand voice"],
-    mustAvoid: ["synergy", "world-class"],
-    bannedClaims: ["guaranteed results", "#1 in the world"],
-  };
+  return { mustUse: ["Copyrail", "brand voice"], mustAvoid: ["synergy", "world-class"], bannedClaims: ["guaranteed results", "#1 in the world"] };
 }
-
-export function resetStore(): void {
-  g.__copyrailStore = emptyStore();
+function userFromRow(row: Record<string, unknown>): User {
+  return { id: String(row.id), email: String(row.email), passwordHash: String(row.password_hash), name: String(row.name), plan: row.plan as User["plan"], createdAt: new Date(String(row.created_at)).toISOString() };
 }
-
-export function ensureSeeded(): void {
-  const store = memory();
-  if (store.users.some((u) => u.email === DEMO_EMAIL)) return;
-  const demo: User = {
-    id: "user_demo",
-    email: DEMO_EMAIL,
-    passwordHash: hashPassword(DEMO_PASSWORD),
-    name: "Desk demo",
-    plan: "demo",
-    createdAt: new Date().toISOString(),
-  };
-  store.users.push(demo);
-  store.profiles[demo.id] = defaultProfile();
-  store.history[demo.id] = [];
-  persist();
+export async function getUserByEmail(email: string): Promise<User | undefined> {
+  await ensureDatabase();
+  const rows = await database()`SELECT * FROM copyrail_users WHERE email = ${email.trim().toLowerCase()}`;
+  return rows[0] ? userFromRow(rows[0]) : undefined;
 }
-
-export function getUserByEmail(email: string): User | undefined {
-  ensureSeeded();
-  return memory().users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+export async function getUserById(id: string): Promise<User | undefined> {
+  await ensureDatabase();
+  const rows = await database()`SELECT * FROM copyrail_users WHERE id = ${id}`;
+  return rows[0] ? userFromRow(rows[0]) : undefined;
 }
-
-export function getUserById(id: string): User | undefined {
-  ensureSeeded();
-  return memory().users.find((u) => u.id === id);
-}
-
-export function createUser(input: {
-  email: string;
-  password: string;
-  name: string;
-}): User {
-  ensureSeeded();
+export async function createUser(input: { email: string; password: string; name: string }): Promise<User> {
   const email = input.email.trim().toLowerCase();
-  if (!email || !input.password) {
-    throw new Error("Email and password are required.");
-  }
-  if (getUserByEmail(email)) {
-    throw new Error("An account with that email already exists.");
-  }
-  const user: User = {
-    id: `user_${randomUUID()}`,
-    email,
-    passwordHash: hashPassword(input.password),
-    name: input.name.trim() || email.split("@")[0],
-    plan: "starter",
-    createdAt: new Date().toISOString(),
-  };
-  const store = memory();
-  store.users.push(user);
-  store.profiles[user.id] = defaultProfile();
-  store.history[user.id] = [];
-  persist();
-  return user;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) throw new Error("Enter a valid email address.");
+  if (input.password.length < 12 || input.password.length > 128) throw new Error("Use a password between 12 and 128 characters.");
+  if (input.name.length > 100) throw new Error("Name must be 100 characters or fewer.");
+  await ensureDatabase();
+  const id = `user_${randomUUID()}`;
+  const passwordHash = hashPassword(input.password);
+  const rows = await database()`INSERT INTO copyrail_users (id, email, password_hash, name) VALUES (${id}, ${email}, ${passwordHash}, ${input.name.trim() || email.split("@")[0]}) ON CONFLICT (email) DO NOTHING RETURNING *`;
+  if (!rows[0]) throw new Error("An account with that email already exists. Sign in instead.");
+  return userFromRow(rows[0]);
 }
-
-export function getProfile(userId: string): BrandProfile {
-  ensureSeeded();
-  const store = memory();
-  if (!store.profiles[userId]) {
-    store.profiles[userId] = defaultProfile();
-    persist();
-  }
-  return store.profiles[userId];
+export async function getProfile(userId: string): Promise<BrandProfile> {
+  await ensureDatabase();
+  const rows = await database()`SELECT profile FROM copyrail_profiles WHERE user_id = ${userId}`;
+  return rows[0] ? rows[0].profile as BrandProfile : defaultProfile();
 }
-
-export function saveProfile(userId: string, incoming: Partial<BrandProfile>): BrandProfile {
-  ensureSeeded();
-  const next: BrandProfile = {
-    mustUse: normalizeList(incoming.mustUse),
-    mustAvoid: normalizeList(incoming.mustAvoid),
-    bannedClaims: normalizeList(incoming.bannedClaims),
-  };
-  memory().profiles[userId] = next;
-  persist();
+export async function saveProfile(userId: string, incoming: Partial<BrandProfile>): Promise<BrandProfile> {
+  const next = { mustUse: normalizeList(incoming.mustUse), mustAvoid: normalizeList(incoming.mustAvoid), bannedClaims: normalizeList(incoming.bannedClaims) };
+  for (const list of Object.values(next)) {
+    if (list.length > 100 || list.some(term => term.length > 200)) throw new Error("Use up to 100 phrases per list, each at most 200 characters.");
+  }
+  await ensureDatabase();
+  await database()`INSERT INTO copyrail_profiles (user_id, profile) VALUES (${userId}, ${JSON.stringify(next)}::jsonb) ON CONFLICT (user_id) DO UPDATE SET profile = EXCLUDED.profile, updated_at = now()`;
   return next;
 }
-
-export function getHistory(userId: string): CheckRecord[] {
-  ensureSeeded();
-  return memory().history[userId] ?? [];
+export async function getHistory(userId: string): Promise<CheckRecord[]> {
+  await ensureDatabase();
+  const rows = await database()`SELECT record FROM copyrail_checks WHERE user_id = ${userId} ORDER BY created_at DESC LIMIT 100`;
+  return rows.map(row => row.record as CheckRecord);
 }
-
-export function setPlan(userId: string, plan: User["plan"]): User {
-  ensureSeeded();
-  const user = getUserById(userId);
-  if (!user) throw new Error("Unknown account.");
-  if (!["starter", "team", "desk", "demo"].includes(plan)) {
-    throw new Error("Unknown plan.");
-  }
-  user.plan = plan;
-  persist();
-  return user;
-}
-
-export function recordCheck(userId: string, copy: string): CheckRecord {
-  ensureSeeded();
-  const profile = getProfile(userId);
-  const result = checkCopy(copy, profile);
-  const record: CheckRecord = {
-    id: `chk_${randomUUID()}`,
-    createdAt: new Date().toISOString(),
-    excerpt: copy.trim().slice(0, 240),
-    copyLength: copy.length,
-    result,
-  };
-  const store = memory();
-  const list = store.history[userId] ?? [];
-  list.unshift(record);
-  store.history[userId] = list.slice(0, HISTORY_LIMIT);
-  persist();
+export async function recordCheck(userId: string, copy: string): Promise<CheckRecord> {
+  if (!copy.trim() || copy.length > 30000) throw new Error("Paste between 1 and 30,000 characters to check.");
+  const profile = await getProfile(userId);
+  const record: CheckRecord = { id: `chk_${randomUUID()}`, createdAt: new Date().toISOString(), excerpt: copy.trim().slice(0, 240), copyLength: copy.length, result: checkCopy(copy, profile) };
+  await database()`INSERT INTO copyrail_checks (id, user_id, record) VALUES (${record.id}, ${userId}, ${JSON.stringify(record)}::jsonb)`;
   return record;
 }
-
-export function applyAndRecord(
-  userId: string,
-  copy: string,
-): { copy: string; record: CheckRecord } {
-  const profile = getProfile(userId);
-  const applied = applyRails(copy, profile);
-  return { copy: applied.copy, record: recordCheck(userId, applied.copy) };
-}
-
-export type CookieReplica = {
-  profile: BrandProfile;
-  history: CheckRecord[];
-};
-
-export function replicaFor(userId: string): CookieReplica {
-  return {
-    profile: getProfile(userId),
-    history: getHistory(userId).slice(0, 8),
-  };
-}
-
-export function hydrateFromReplica(userId: string, replica: CookieReplica | null): void {
-  if (!replica) return;
-  const store = memory();
-  if (!store.profiles[userId] && replica.profile) {
-    store.profiles[userId] = replica.profile;
-  }
-  if ((!store.history[userId] || store.history[userId].length === 0) && replica.history) {
-    store.history[userId] = replica.history;
-  }
+export async function applyAndRecord(userId: string, copy: string): Promise<{ copy: string; record: CheckRecord }> {
+  if (!copy.trim() || copy.length > 30000) throw new Error("Paste between 1 and 30,000 characters to check.");
+  const applied = applyRails(copy, await getProfile(userId));
+  return { copy: applied.copy, record: await recordCheck(userId, applied.copy) };
 }

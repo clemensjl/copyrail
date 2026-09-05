@@ -54,7 +54,7 @@ describe("checkCopy (shipped brand-check)", () => {
     }
   });
 
-  it("applyRails strips must-avoid terms and inserts missing must-use terms", () => {
+  it("applyRails removes flagged phrases but leaves missing terms for human review", () => {
     const profile = {
       mustUse: ["Acme"],
       mustAvoid: ["synergy"],
@@ -66,8 +66,8 @@ describe("checkCopy (shipped brand-check)", () => {
     );
     expect(applied.copy.toLowerCase()).not.toContain("synergy");
     expect(applied.copy.toLowerCase()).not.toContain("guaranteed results");
-    expect(applied.copy.toLowerCase()).toContain("acme");
-    expect(applied.result.pass).toBe(true);
+    expect(applied.copy.toLowerCase()).not.toContain("acme");
+    expect(applied.result.pass).toBe(false);
     expect(applied.result.valid).toBe(true);
     expect(applied.result.score).toBeGreaterThanOrEqual(PASS_THRESHOLD);
   });
@@ -81,4 +81,20 @@ describe("checkCopy (shipped brand-check)", () => {
     expect(applied.result.valid).toBe(false);
     expect(applied.result.pass).toBe(false);
   });
+});
+
+it("holds a draft missing even one required phrase", () => {
+  expect(checkCopy("A useful draft", {mustUse:["Acme"],mustAvoid:[],bannedClaims:[]}).pass).toBe(false);
+});
+it("matches whole words and preserves offsets after Unicode text", () => {
+  const text = "Istanbul: the basket is safe. ASK us.";
+  const result = checkCopy(text, {mustUse:[],mustAvoid:["ask"],bannedClaims:[]});
+  expect(result.violations).toHaveLength(1);
+  const location = result.violations[0].location!;
+  expect(text.slice(location.start, location.end)).toBe("ASK");
+});
+it("does not damage words that contain a restricted substring", () => {
+  const applied = applyRails("The basket is ready. Ask us.", {mustUse:[],mustAvoid:["ask"],bannedClaims:[]});
+  expect(applied.copy).toContain("basket");
+  expect(applied.copy).not.toContain("Ask");
 });

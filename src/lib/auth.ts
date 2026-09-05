@@ -42,6 +42,7 @@ export function encodeToken(payload: object): string {
 
 export function decodeToken<T>(token: string | undefined | null): T | null {
   if (!token) return null;
+  if (token.split(".").length !== 2) return null;
   const [body, sig] = token.split(".");
   if (!body || !sig) return null;
   const expected = sign(body);

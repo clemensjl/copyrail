@@ -28,7 +28,7 @@ export function normalizeList(input: string | string[] | undefined | null): stri
   const raw = Array.isArray(input) ? input.join("\n") : String(input);
   const seen = new Set<string>();
   const out: string[] = [];
-  for (const part of raw.split(/[\n,;]/)) {
+  for (const part of raw.split(/\r?\n/)) {
     const term = part.trim();
     if (!term) continue;
     const key = term.toLowerCase();
@@ -40,18 +40,11 @@ export function normalizeList(input: string | string[] | undefined | null): stri
 }
 
 function findMatches(copy: string, term: string): { start: number; end: number }[] {
-  const hits: { start: number; end: number }[] = [];
-  if (!term) return hits;
-  const hay = copy.toLowerCase();
-  const needle = term.toLowerCase();
-  let from = 0;
-  while (from <= hay.length - needle.length) {
-    const start = hay.indexOf(needle, from);
-    if (start === -1) break;
-    hits.push({ start, end: start + term.length });
-    from = start + Math.max(needle.length, 1);
-  }
-  return hits;
+  if (!term) return [];
+  const startBoundary = /^[\p{L}\p{N}_]/u.test(term) ? "(?<![\\p{L}\\p{N}_])" : "";
+  const endBoundary = /[\p{L}\p{N}_]$/u.test(term) ? "(?![\\p{L}\\p{N}_])" : "";
+  const pattern = new RegExp(startBoundary + escapeRegex(term) + endBoundary, "giu");
+  return Array.from(copy.matchAll(pattern), match => ({start: match.index!, end: match.index! + match[0].length}));
 }
 
 export function checkCopy(copy: string, profile: BrandProfile): CheckResult {
@@ -116,7 +109,7 @@ export function checkCopy(copy: string, profile: BrandProfile): CheckResult {
 
   score = Math.max(0, Math.min(100, score));
   const blocking = violations.some(
-    (v) => v.type === "must-avoid" || v.type === "banned-claim",
+    (v) => v.type === "must-avoid" || v.type === "banned-claim" || v.type === "must-use",
   );
   const valid = true;
   const pass = valid && score >= PASS_THRESHOLD && !blocking;
@@ -136,8 +129,9 @@ function escapeRegex(value: string): string {
 
 function stripTerm(copy: string, term: string): string {
   if (!term) return copy;
-  const re = new RegExp(escapeRegex(term), "gi");
-  return copy.replace(re, "");
+  let next = copy;
+  for (const hit of findMatches(copy, term).reverse()) next = next.slice(0, hit.start) + next.slice(hit.end);
+  return next;
 }
 
 function tidyCopy(copy: string): string {
@@ -167,16 +161,6 @@ export function applyRails(
     next = stripTerm(next, term);
   }
   next = tidyCopy(next);
-
-  const missing = normalizeList(profile.mustUse).filter(
-    (term) => findMatches(next, term).length === 0,
-  );
-  if (missing.length > 0) {
-    const addition = missing.join(". ");
-    next = next
-      ? `${next.replace(/[.!?]$/, "")}. ${addition}.`
-      : `${addition}.`;
-  }
 
   next = tidyCopy(next);
   return { copy: next, result: checkCopy(next, profile) };

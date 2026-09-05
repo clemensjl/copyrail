@@ -10,12 +10,14 @@ export default function CheckerPage() {
   );
   const [record, setRecord] = useState<CheckRecord | null>(null);
   const [error, setError] = useState("");
+  const [previousCopy, setPreviousCopy] = useState<string | null>(null);
   const [pending, setPending] = useState<"check" | "apply" | null>(null);
 
   async function runCheck(e: FormEvent) {
     e.preventDefault();
     setPending("check");
     setError("");
+    try {
     const res = await fetch("/api/check", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -28,11 +30,14 @@ export default function CheckerPage() {
       return;
     }
     setRecord(data as CheckRecord);
+    } catch { setError("Connection failed. Please try again."); }
+    finally { setPending(null); }
   }
 
   async function applyRails() {
     setPending("apply");
     setError("");
+    try {
     const res = await fetch("/api/rewrite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -44,8 +49,11 @@ export default function CheckerPage() {
       setError(data.error || "Apply failed.");
       return;
     }
+    setPreviousCopy(copy);
     setCopy(data.copy as string);
     setRecord(data.record as CheckRecord);
+    } catch { setError("Connection failed. Please try again."); }
+    finally { setPending(null); }
   }
 
   const result = record?.result;
@@ -63,7 +71,8 @@ export default function CheckerPage() {
             <span className="mb-2 block text-sm font-medium">Copy</span>
             <textarea
               value={copy}
-              onChange={(e) => setCopy(e.target.value)}
+              onChange={(e) => { setCopy(e.target.value); setRecord(null); }}
+              maxLength={30000}
               rows={14}
               className="w-full resize-y rounded-[8px] border border-rule bg-raised px-4 py-3 leading-7"
             />
@@ -83,10 +92,12 @@ export default function CheckerPage() {
               disabled={pending !== null}
               className="h-11 rounded-[8px] border border-rule bg-raised px-5 text-sm font-medium disabled:opacity-60"
             >
-              {pending === "apply" ? "Applying..." : "Apply rails"}
+              {pending === "apply" ? "Applying..." : "Remove flagged phrases"}
             </button>
           </div>
         </form>
+        <p className="mt-3 text-xs text-mute">Phrase removal can change meaning. Review every edit before publishing; missing required wording needs your attention.</p>
+        {previousCopy !== null ? <button className="mt-3 text-sm underline" onClick={() => { setCopy(previousCopy); setRecord(null); setPreviousCopy(null); }}>Undo phrase removal</button> : null}
         {located && record ? (
           <div className="mt-6">
             <p className="mb-2 text-sm font-medium">Located flags</p>
@@ -110,7 +121,7 @@ export default function CheckerPage() {
               ? "Empty copy is invalid, not a pass."
               : result.pass
                 ? "Clears the rail."
-                : "Held below the pass threshold."}
+                : "Needs changes before it clears your guidelines."}
         </p>
         <ul className="mt-6 space-y-3">
           {result?.violations.map((v, i) => (
