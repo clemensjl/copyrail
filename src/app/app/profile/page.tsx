@@ -1,8 +1,10 @@
 "use client";
 
+import { useBrand } from "@/components/workspace-shell";
 import { FormEvent, useEffect, useState } from "react";
 
 export default function ProfilePage() {
+  const {brand,refreshBrands}=useBrand();
   const [mustUse, setMustUse] = useState("");
   const [mustAvoid, setMustAvoid] = useState("");
   const [bannedClaims, setBannedClaims] = useState("");
@@ -13,7 +15,7 @@ export default function ProfilePage() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    Promise.all([fetch("/api/profile"), fetch("/api/auth/me")])
+    Promise.all([fetch(`/api/profile?brand=${encodeURIComponent(brand.id)}`), fetch("/api/auth/me")])
       .then(async ([profileRes, meRes]) => {
         const p = await profileRes.json();
         if (!profileRes.ok || !meRes.ok) throw new Error("Load failed");
@@ -24,7 +26,7 @@ export default function ProfilePage() {
 
       })
       .catch(() => setError("Could not load rails."));
-  }, []);
+  }, [brand.id]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -35,7 +37,7 @@ export default function ProfilePage() {
     const res = await fetch("/api/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mustUse: mustUse.split("\n"), mustAvoid: mustAvoid.split("\n"), bannedClaims: bannedClaims.split("\n") }),
+      body: JSON.stringify({ brandId:brand.id, mustUse: mustUse.split("\n"), mustAvoid: mustAvoid.split("\n"), bannedClaims: bannedClaims.split("\n") }),
     });
     const data = await res.json().catch(() => ({}));
     setPending(false);
@@ -43,7 +45,8 @@ export default function ProfilePage() {
       setError(data.error || "Save failed.");
       return;
     }
-    setStatus("Rails saved. Later requests will load this profile.");
+    setStatus("Rails saved. New checks use these guidelines; existing reports keep their original rules.");
+    await refreshBrands();
     } catch { setError("Connection failed. Your changes have not been saved."); }
     finally { setPending(false); }
   }
@@ -52,7 +55,7 @@ export default function ProfilePage() {
     <div className="max-w-2xl">
       <h1 className="font-display text-3xl font-semibold tracking-tight">Rails</h1>
       <p className="mt-2 text-mute">
-        One term per line. These rules score every draft on this account.
+        One phrase per line. These guidelines apply to {brand.name}.
       </p>
       <form onSubmit={onSubmit} className="mt-8 space-y-5">
         <Field label="Must-use terms" value={mustUse} onChange={setMustUse} />

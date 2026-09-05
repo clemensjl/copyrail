@@ -42,7 +42,19 @@ function client() {
     assert.deepEqual((await b('/api/history')).data,[]);
     assert.notDeepEqual((await b('/api/profile')).data.mustUse,['Northstar']);
     assert.equal((await guest('/api/history','GET',undefined,{cookie:'copyrail_session=forged.signature'})).status,401);
-    console.log('PASS: production signup, session flags, input validation, saved guidelines, checks, logout/login persistence, tenant isolation, origin checks and forged-session rejection.');
+    const brands=await a('/api/brands');assert.equal(brands.status,200);assert.equal(brands.data.length,1);
+    res=await a('/api/brands','POST',{name:'Smoke client'});assert.equal(res.status,200,JSON.stringify(res.data));const brandId=res.data.id;
+    res=await a('/api/profile','PUT',{brandId,mustUse:['Client'],mustAvoid:['synergy'],bannedClaims:[]});assert.equal(res.status,200);
+    res=await a('/api/check','POST',{brandId,copy:'Client writes clearly.'});assert.equal(res.status,200);const reportId=res.data.id;
+    assert.equal((await a('/api/history')).data.length,2);
+    assert.equal((await a('/api/history?brand='+brandId)).data.length,1);
+    assert.equal((await b('/api/history?brand='+brandId)).status,404);
+    assert.equal((await b('/api/check','POST',{brandId,copy:'Client draft'})).status,404);
+    assert.equal((await b('/api/reports/'+reportId)).status,404);
+    const exported=await a('/api/reports/'+reportId);assert.equal(exported.status,200);assert.equal(exported.data.copy,'Client writes clearly.');
+    await a('/api/profile','PUT',{brandId,mustUse:['Changed'],mustAvoid:[],bannedClaims:[]});
+    assert.deepEqual((await a('/api/reports/'+reportId)).data.profileSnapshot.mustUse,['Client']);
+    console.log('PASS: production signup, session flags, input validation, saved guidelines, checks, logout/login persistence, tenant isolation, origin checks forged-session rejection, brand isolation, private report export and immutable snapshots.');
   } finally {
     for(const id of created) await sql`DELETE FROM copyrail_users WHERE id = ${id}`;
     console.log(`Removed ${created.length} test accounts and their dependent test data.`);

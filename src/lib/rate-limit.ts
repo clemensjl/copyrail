@@ -4,7 +4,6 @@ import { ApiError } from "./api";
 export async function authRateLimit(request: Request) {
   await ensureDatabase();
   const sql = database();
-  await sql`CREATE TABLE IF NOT EXISTS copyrail_rate_limits (key text PRIMARY KEY, count integer NOT NULL, expires_at timestamptz NOT NULL)`;
   const address = request.headers.get("x-vercel-forwarded-for") || request.headers.get("x-forwarded-for") || "local";
   const bucket = Math.floor(Date.now() / 900000);
   const key = createHash("sha256").update(`${address}:${bucket}`).digest("hex");

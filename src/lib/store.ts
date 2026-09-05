@@ -3,6 +3,8 @@ import { hashPassword } from "./auth";
 import { applyRails, checkCopy, normalizeList, type BrandProfile } from "./brand-check";
 import { database, ensureDatabase } from "./db";
 import type { CheckRecord } from "./types";
+import { getBrand, type BrandWithProfile } from "./brands";
+import { ApiError } from "./api";
 export type User = { id: string; email: string; passwordHash: string; name: string; plan: "starter" | "team" | "desk" | "demo"; createdAt: string };
 export type { CheckRecord };
 export function defaultProfile(): BrandProfile {
@@ -33,34 +35,42 @@ export async function createUser(input: { email: string; password: string; name:
   if (!rows[0]) throw new Error("An account with that email already exists. Sign in instead.");
   return userFromRow(rows[0]);
 }
-export async function getProfile(userId: string): Promise<BrandProfile> {
-  await ensureDatabase();
-  const rows = await database()`SELECT profile FROM copyrail_profiles WHERE user_id = ${userId}`;
-  return rows[0] ? rows[0].profile as BrandProfile : defaultProfile();
+export async function getProfile(userId: string, brandId?: string): Promise<BrandProfile> {
+  return (await getBrand(userId, brandId)).profile;
 }
-export async function saveProfile(userId: string, incoming: Partial<BrandProfile>): Promise<BrandProfile> {
+export async function saveProfile(userId: string, incoming: Partial<BrandProfile>, brandId?: string): Promise<BrandProfile> {
   const next = { mustUse: normalizeList(incoming.mustUse), mustAvoid: normalizeList(incoming.mustAvoid), bannedClaims: normalizeList(incoming.bannedClaims) };
   for (const list of Object.values(next)) {
-    if (list.length > 100 || list.some(term => term.length > 200)) throw new Error("Use up to 100 phrases per list, each at most 200 characters.");
+    if (list.length > 100 || list.some(term => term.length > 200)) throw new ApiError("Use up to 100 phrases per list, each at most 200 characters.");
   }
-  await ensureDatabase();
-  await database()`INSERT INTO copyrail_profiles (user_id, profile) VALUES (${userId}, ${JSON.stringify(next)}::jsonb) ON CONFLICT (user_id) DO UPDATE SET profile = EXCLUDED.profile, updated_at = now()`;
+  const brand=await getBrand(userId,brandId);
+  await database()`UPDATE copyrail_brands SET profile=${JSON.stringify(next)}::jsonb, revision=revision+1 WHERE id=${brand.id} AND user_id=${userId}`;
   return next;
 }
-export async function getHistory(userId: string): Promise<CheckRecord[]> {
-  await ensureDatabase();
-  const rows = await database()`SELECT record FROM copyrail_checks WHERE user_id = ${userId} ORDER BY created_at DESC LIMIT 100`;
+export async function getHistory(userId: string, brandId?: string): Promise<CheckRecord[]> {
+  const brand=await getBrand(userId,brandId);
+  const rows = await database()`SELECT record FROM copyrail_checks WHERE user_id = ${userId} AND (brand_id = ${brand.id} OR (${brand.isDefault} AND brand_id IS NULL)) ORDER BY created_at DESC LIMIT 100`;
   return rows.map(row => row.record as CheckRecord);
 }
-export async function recordCheck(userId: string, copy: string): Promise<CheckRecord> {
-  if (!copy.trim() || copy.length > 30000) throw new Error("Paste between 1 and 30,000 characters to check.");
-  const profile = await getProfile(userId);
-  const record: CheckRecord = { id: `chk_${randomUUID()}`, createdAt: new Date().toISOString(), excerpt: copy.trim().slice(0, 240), copyLength: copy.length, result: checkCopy(copy, profile) };
-  await database()`INSERT INTO copyrail_checks (id, user_id, record) VALUES (${record.id}, ${userId}, ${JSON.stringify(record)}::jsonb)`;
+export async function getCheck(userId: string, checkId: string): Promise<CheckRecord> {
+  await ensureDatabase();
+  const rows = await database()`SELECT record FROM copyrail_checks WHERE user_id=${userId} AND id=${checkId}`;
+  if (!rows[0]) throw new ApiError("This report is not available in your workspace.",404);
+  return rows[0].record as CheckRecord;
+}
+async function saveCheck(userId: string, copy: string, brand: BrandWithProfile): Promise<CheckRecord> {
+  if (!Object.values(brand.profile).some(terms=>terms.length>0)) throw new ApiError("Add at least one guideline for this brand before checking a draft.");
+  const record: CheckRecord = { id: `chk_${randomUUID()}`, createdAt: new Date().toISOString(), excerpt: copy.trim().slice(0, 240), copyLength: copy.length, copy, brandId:brand.id, brandName:brand.name, profileSnapshot:brand.profile, profileRevision:brand.revision, result:checkCopy(copy,brand.profile) };
+  await database()`INSERT INTO copyrail_checks (id, user_id, brand_id, record) VALUES (${record.id}, ${userId}, ${brand.id}, ${JSON.stringify(record)}::jsonb)`;
   return record;
 }
-export async function applyAndRecord(userId: string, copy: string): Promise<{ copy: string; record: CheckRecord }> {
-  if (!copy.trim() || copy.length > 30000) throw new Error("Paste between 1 and 30,000 characters to check.");
-  const applied = applyRails(copy, await getProfile(userId));
-  return { copy: applied.copy, record: await recordCheck(userId, applied.copy) };
+export async function recordCheck(userId: string, copy: string, brandId?: string): Promise<CheckRecord> {
+  if (!copy.trim() || copy.length > 30000) throw new ApiError("Paste between 1 and 30,000 characters to check.");
+  return saveCheck(userId,copy,await getBrand(userId,brandId));
+}
+export async function applyAndRecord(userId: string, copy: string, brandId?: string): Promise<{ copy: string; record: CheckRecord }> {
+  if (!copy.trim() || copy.length > 30000) throw new ApiError("Paste between 1 and 30,000 characters to check.");
+  const brand=await getBrand(userId,brandId);
+  const applied=applyRails(copy,brand.profile);
+  return {copy:applied.copy,record:await saveCheck(userId,applied.copy,brand)};
 }

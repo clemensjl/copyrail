@@ -6,7 +6,7 @@ Brand guideline checks for content teams using multiple writing tools.
 
 Next.js 16, React 19, TypeScript, Tailwind, Neon Postgres, Vercel. Accounts use salted scrypt password hashes and signed, HTTP-only sessions. Guidelines and check history are stored in Postgres and scoped to the authenticated account. The phrase checker is deterministic; it does not assess factual truth, legal compliance, or nuanced tone.
 
-The preview supports signup, login, editable phrase guidelines, located flags, reversible phrase removal, and saved check history. Subscriptions, multiple brands, team invitations, password recovery, and email verification remain unfinished. No customers or revenue are claimed.
+The preview supports signup, login, five separate client brands, editable phrase guidelines, located flags, reversible phrase removal, and saved check history per brand. New review reports preserve full drafts, guideline revisions, and rule snapshots, with authenticated JSON downloads and print/PDF layout. Subscriptions, team invitations, password recovery, and email verification remain unfinished. No customers or revenue are claimed.
 
 ## Development
 
@@ -16,7 +16,7 @@ The preview supports signup, login, editable phrase guidelines, located flags, r
 
 `npm test` runs unit tests. To run the actual database test, set `RUN_DATABASE_TESTS=1`, then execute `node --env-file=.env.local node_modules/vitest/vitest.mjs run`. It creates unique test accounts and deletes only those accounts afterward. `npm run build` and `npm run lint` check production compilation and lint.
 
-Database tables are initialized on first use. Never commit environment files or the old local data directory. Production intentionally has no local-memory fallback for account storage.
+Database tables are initialized transactionally on first use under a Postgres advisory lock. Legacy guidelines migrate lazily into the first brand; legacy check excerpts remain available and are identified as incomplete reports. Never commit environment files or the old local data directory. Production intentionally has no local-memory fallback for account storage.
 
 ## Deployment
 

@@ -81,3 +81,11 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+@media print {
+  :root { --paper: #fff; --ink: #111; --mute: #444; --rule: #ccc; --raised: #fff; --proof: #a00; }
+  body { background: white; color: #111; }
+  header, #active-brand, label[for="active-brand"] { display: none !important; }
+  article { max-width: none; }
+  article section, article li { break-inside: avoid; }
+}

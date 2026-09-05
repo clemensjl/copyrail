@@ -1,10 +1,13 @@
 "use client";
 
+import Link from "next/link";
+import { useBrand } from "@/components/workspace-shell";
 import { FormEvent, useState } from "react";
 import { MarkedCopy } from "@/components/marked-copy";
 import type { CheckRecord } from "@/lib/types";
 
 export default function CheckerPage() {
+  const {brand,link}=useBrand();
   const [copy, setCopy] = useState(
     "Copyrail keeps our brand voice consistent, with world-class synergy in every line.",
   );
@@ -21,7 +24,7 @@ export default function CheckerPage() {
     const res = await fetch("/api/check", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ copy }),
+      body: JSON.stringify({ copy, brandId:brand.id }),
     });
     const data = await res.json().catch(() => ({}));
     setPending(null);
@@ -41,7 +44,7 @@ export default function CheckerPage() {
     const res = await fetch("/api/rewrite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ copy }),
+      body: JSON.stringify({ copy, brandId:brand.id }),
     });
     const data = await res.json().catch(() => ({}));
     setPending(null);
@@ -64,7 +67,7 @@ export default function CheckerPage() {
       <div>
         <h1 className="font-display text-3xl font-semibold tracking-tight">Checker</h1>
         <p className="mt-2 max-w-[50ch] text-mute">
-          Paste a draft. Copyrail scores it against the rails saved on this account.
+          Review a draft against the guidelines for {brand.name}.
         </p>
         <form onSubmit={runCheck} className="mt-6">
           <label className="block">
@@ -97,6 +100,7 @@ export default function CheckerPage() {
             </button>
           </div>
         </form>
+        {record ? <Link href={link(`/app/history/${record.id}`)} className="mt-4 inline-block text-sm underline">Open saved review report</Link> : null}
         <p className="mt-3 text-xs text-mute">Phrase removal can change meaning. Review every edit before publishing; missing required wording needs your attention.</p>
         {previousCopy !== null ? <button className="mt-3 text-sm underline" onClick={() => { setCopy(previousCopy); setRecord(null); setPreviousCopy(null); }}>Undo phrase removal</button> : null}
         {located && record ? (

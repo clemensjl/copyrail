@@ -25,7 +25,7 @@ describe.skipIf(process.env.RUN_DATABASE_TESTS !== "1")("real Postgres account p
       expect(rows).toHaveLength(2);
       expect((await getHistory(a.id))[0].id).toBe(passed.id);
       expect(await getHistory(b.id)).toEqual([]);
-      const profiles = await database()`SELECT profile FROM copyrail_profiles WHERE user_id = ${a.id}`;
+      const profiles = await database()`SELECT profile FROM copyrail_brands WHERE user_id = ${a.id} AND slot = 0`;
       expect(profiles[0].profile.mustUse).toEqual(["Northstar"]);
     } finally {
       for (const id of ids) await database()`DELETE FROM copyrail_users WHERE id = ${id}`;

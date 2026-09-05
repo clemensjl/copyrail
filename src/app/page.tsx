@@ -97,13 +97,13 @@ export default function MarketingPage() {
             <div className="bg-paper p-6 md:p-8">
               <p className="font-mono text-sm text-proof">Save rails</p>
               <p className="mt-3 max-w-[36ch] text-mute">
-                Must-use terms, must-avoid words, and banned claims live on the account. They come back on the next visit.
+                Keep separate required wording, restricted phrases, and prohibited claims for each client brand. Switch brands without mixing their guidelines.
               </p>
             </div>
             <div className="bg-paper p-6 md:p-8">
               <p className="font-mono text-sm text-proof">Run copy</p>
               <p className="mt-3 max-w-[52ch] text-mute">
-                Paste a draft. Copyrail returns a numeric score, every located hit, and a fix suggestion. Empty input is rejected, not passed.
+                Review a draft, locate flagged phrases, and save the result. Each new report keeps the full draft and the exact guidelines used, ready to download or print.
               </p>
             </div>
           </div>
@@ -135,7 +135,7 @@ export default function MarketingPage() {
               Start with a clearer review process.
             </h2>
             <p className="mt-3 max-w-[54ch] text-mute">
-              The preview is free. These are planned subscription prices; paid plans and team features are not available yet.
+              The free preview includes five private brand spaces and saved review reports. These are proposed subscription prices; payments and shared team access are not available yet.
             </p>
             <div className="mt-10 grid gap-4 lg:grid-cols-[0.8fr_1.2fr_0.8fr]">
               <PriceCol

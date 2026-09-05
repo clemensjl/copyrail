@@ -41,3 +41,13 @@ Goal remains active. Previous continuation made concrete source and infrastructu
 Stripe sandbox provisioning returned integration_terms_acceptance_required. Vercel explicitly requires browser acceptance by the user before it will provision the sandbox. No Stripe account or resource was created. URL: https://vercel.com/clemens-jeles-projects/~/integrations/accept-terms/stripe?source=cli
 
 This does not block building remaining product features or implementing the billing adapter and tests. It does block verified Stripe checkout until the service accepts the setup. Do not repeatedly attempt the same provisioning command without an external state change.
+
+## Multi-brand review milestone
+
+Implemented five private brand spaces, create/rename/switch, brand-specific guidelines and histories, full saved drafts, immutable rule snapshots/revisions, authenticated JSON reports, and print/PDF layouts. Legacy guidelines and check excerpts remain associated with the first brand.
+
+All 13 tests passed, including real Postgres migration, account/brand isolation, capacity under concurrent creation, and immutable reports. A test caught concurrent schema initialization; it is now serialized with a transaction-scoped advisory lock and all migrations run in one transaction.
+
+Local production build and browser smoke passed: desktop/mobile, brand creation/switching, scoped histories, reports, JSON export, and unchanged historic snapshots after edits. The latest print-style adjustment still needs its production browser verification.
+
+Next: publish this milestone and run the expanded API/browser smoke suite on the production alias. Then continue subscription integration, reviewer collaboration, account recovery and the launch prerequisites above.
