@@ -2,6 +2,8 @@
 
 Brand guideline checks for content teams using multiple writing tools.
 
+Live preview: <https://copyrail.vercel.app>
+
 ## Current implementation
 
 Next.js 16, React 19, TypeScript, Tailwind, Neon Postgres, Vercel. Accounts use salted scrypt password hashes and signed, HTTP-only sessions. Guidelines and check history are stored in Postgres and scoped to the authenticated account. The phrase checker is deterministic; it does not assess factual truth, legal compliance, or nuanced tone.
@@ -26,3 +28,11 @@ Database tables are initialized transactionally on first use under a Postgres ad
 - Database: dedicated `copyrail-db`, Neon free tier, Frankfurt
 
 See `docs/launch-status.md` for verified progress and remaining work. Deployment existence alone does not establish commercial readiness.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[AGPL-3.0](LICENSE). Copyright (c) 2026 Clemens Jele. If you run a modified version as a network service, the AGPL requires you to offer its source to the users of that service.
